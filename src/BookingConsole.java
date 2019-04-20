@@ -32,15 +32,6 @@ public class BookingConsole {
         }
     }
 
-    public boolean checkIfDouble(String input){
-        try{
-            Double.parseDouble(input);
-        }catch (NumberFormatException ex) {
-            return false;
-        }
-        return true;
-
-    }
 
     private void inputLocations(){
         Scanner scan = new Scanner(System.in);
@@ -72,20 +63,35 @@ public class BookingConsole {
             longitudeDrop= scan.nextLine();
         }
 
-//        System.out.println("latitude pick up:" + latitudePick);
-//        System.out.println("longitude pick up:" + longitudePick);
-//        System.out.println("latitude drop off:" + latitudeDrop);
-//        System.out.println("longitude drop off:" + longitudeDrop);
+        int numOfPass = inputPassengers();
+
 
         try {
             JSONObject obj = new JSONObject(HttpsRequest.sendGET("https://techtest.rideways.com/dave?pickup=" + latitudePick + "," + longitudePick + "&dropoff=" + latitudeDrop + "," + longitudeDrop).toString());
 
             JSONArray arr = obj.getJSONArray("options");
             JSONArray sortedArr = jsonSortedDescending(arr);
+            boolean carFound = false;
             for (int i = 0; i < sortedArr.length(); i++)
             {
-                System.out.println(sortedArr.getJSONObject(i).getString("car_type") + " - " + sortedArr.getJSONObject(i).getString("price"));
+                String carType = sortedArr.getJSONObject(i).getString("car_type");
+                if(numOfPass > 6 && carType.equals("MINIBUS")) {
+                    System.out.println(carType + " - " + sortedArr.getJSONObject(i).getString("price"));
+                    carFound = true;
+                }
+                else if(numOfPass > 4 && numOfPass < 7 && (carType.equals("MINIBUS") || carType.equals("LUXURY_PEOPLE_CARRIER") || carType.equals("PEOPLE_CARRIER"))){
+                    System.out.println(carType + " - " + sortedArr.getJSONObject(i).getString("price"));
+                    carFound = true;
+                }
+                else if(numOfPass < 5){
+                    System.out.println(carType + " - " + sortedArr.getJSONObject(i).getString("price"));
+                    carFound = true;
+                }
             }
+            if(!carFound) {
+                System.out.println("Sorry no cars available at the moment");
+            }
+
         }
         catch (NullPointerException e) {
             System.out.println("Oops, couldn't connect to server.");
@@ -137,6 +143,38 @@ public class BookingConsole {
         }
 
         return sortedJsonArray;
+    }
+
+
+    public boolean checkIfDouble(String input){
+        try{
+            Double.parseDouble(input);
+        }catch (NumberFormatException ex) {
+            return false;
+        }
+        return true;
+
+    }
+
+    public boolean checkIfInt(String input){
+        try{
+            Integer.parseInt(input);
+        }catch (NumberFormatException ex) {
+            return false;
+        }
+        return true;
+
+    }
+
+    private int inputPassengers(){
+        Scanner scan = new Scanner(System.in);
+        System.out.println("Input number of passengers");
+        String passNum = scan.nextLine();
+        while(!checkIfInt(passNum) || Integer.parseInt(passNum) <= 0){
+            System.out.println("invalid input, please input a number.");
+            passNum= scan.nextLine();
+        }
+        return Integer.parseInt(passNum);
     }
 
 }
