@@ -5,10 +5,13 @@ The IDE I used to make the program was intellij.
 ### To set it up do the following:
 
 * clone the repository
+*download json.org jar
 * set the sdk
 * navigate to file -> project structure -> Modules
 * set the out folder as excluded, src as sources and test as tests
+* navigate to dependencies tab from where you are, press on + add the json jar
 * now navigate from modules to project and set the project compiler output directory to be the out folder
+* to run the test class add junit 4 to it
 
 ### Running part 1:
 
