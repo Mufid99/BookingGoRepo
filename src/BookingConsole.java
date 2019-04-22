@@ -1,29 +1,49 @@
-import java.sql.SQLOutput;
-import java.util.*;
 
+import java.util.*;
 import org.json.*;
+
+/**
+ * This class is responsible for making the
+ * interactive console that is used to order taxis
+ *
+ * @author Mufid Alkhaddour
+ */
+
 
 public class BookingConsole {
 
-    public BookingConsole(){}
+    private HashMap<String, Integer> daveMap = new HashMap<>();
+    private HashMap<String, Integer> ericMap = new HashMap<>();
+    private HashMap<String, Integer> jeffMap = new HashMap<>();
 
-    public void startConsole(){
+
+    public BookingConsole() {
+    }
+
+    /**
+     * initiates the console and gives the
+     * initial options for the user
+     */
+    public void startConsole() {
         boolean finished = false;
-        while (!finished){
+        while (!finished) {
             Scanner scan = new Scanner(System.in);
             System.out.println("Choose option number:");
-            System.out.println("1.Order taxi");
-            System.out.println("2.Quit");
+            System.out.println("1.Order taxi by using dave's taxis");
+            System.out.println("2.Order taxi with filtering by number of passengers");
+            System.out.println("3.Quit");
             String input = scan.nextLine();
 
-            switch (input){
+            switch (input) {
                 case "1":
-                    inputLocations();
+                    generateConsoleDave(); // method for the simple part in part 1
                     break;
                 case "2":
+                    generateConsole(); // method for complete part 1
+                    break;
+                case "3":
                     System.out.println("complete");
-
-                    finished = true;
+                    finished = true; // stops the console
                     break;
                 default:
                     System.out.println("invalid input");
@@ -32,90 +52,159 @@ public class BookingConsole {
         }
     }
 
-
-    private void inputLocations(){
-        Scanner scan = new Scanner(System.in);
+    /**
+     * returns the get request for dave's taxis only
+     */
+    private void generateConsoleDave() {
         System.out.println("Input your pick up location");
         System.out.println("Input a latitude");
-        String latitudePick = scan.nextLine();
-        while(!checkIfDouble(latitudePick)){
-            System.out.println("invalid input, please input a number.");
-            latitudePick= scan.nextLine();
-        }
+        String latitudePick = inputLatitude();
         System.out.println("Input a longitude");
-        String longitudePick = scan.nextLine();
-        while(!checkIfDouble(longitudePick)){
-            System.out.println("invalid input, please input a number.");
-            longitudePick= scan.nextLine();
-        }
-
+        String longitudePick = inputLongitude();
         System.out.println("Input your drop off location");
         System.out.println("Input a latitude");
-        String latitudeDrop = scan.nextLine();
-        while(!checkIfDouble(latitudeDrop)){
-            System.out.println("invalid input, please input a number.");
-            latitudeDrop= scan.nextLine();
-        }
+        String latitudeDrop = inputLatitude();
         System.out.println("Input a longitude");
-        String longitudeDrop = scan.nextLine();
-        while(!checkIfDouble(longitudeDrop)){
-            System.out.println("invalid input, please input a number.");
-            longitudeDrop= scan.nextLine();
-        }
-
-        int numOfPass = inputPassengers();
+        String longitudeDrop = inputLongitude();
 
 
         try {
-            JSONObject obj = new JSONObject(HttpsRequest.sendGET("https://techtest.rideways.com/dave?pickup=" + latitudePick + "," + longitudePick + "&dropoff=" + latitudeDrop + "," + longitudeDrop).toString());
-
+            JSONObject obj = new JSONObject(HttpsRequest.sendGET("https://techtest.rideways.com/dave?pickup=" + latitudePick + "," + longitudePick + "&dropoff=" + latitudeDrop + "," + longitudeDrop).toString()); //gets the json
             JSONArray arr = obj.getJSONArray("options");
             JSONArray sortedArr = jsonSortedDescending(arr);
-            boolean carFound = false;
-            for (int i = 0; i < sortedArr.length(); i++)
-            {
+            for (int i = 0; i < sortedArr.length(); i++) {
                 String carType = sortedArr.getJSONObject(i).getString("car_type");
-                if(numOfPass > 6 && carType.equals("MINIBUS")) {
-                    System.out.println(carType + " - " + sortedArr.getJSONObject(i).getString("price"));
-                    carFound = true;
-                }
-                else if(numOfPass > 4 && numOfPass < 7 && (carType.equals("MINIBUS") || carType.equals("LUXURY_PEOPLE_CARRIER") || carType.equals("PEOPLE_CARRIER"))){
-                    System.out.println(carType + " - " + sortedArr.getJSONObject(i).getString("price"));
-                    carFound = true;
-                }
-                else if(numOfPass < 5){
-                    System.out.println(carType + " - " + sortedArr.getJSONObject(i).getString("price"));
-                    carFound = true;
-                }
-            }
-            if(!carFound) {
-                System.out.println("Sorry no cars available at the moment");
+                System.out.println(carType + " - " + sortedArr.getJSONObject(i).getString("price")); //prints out the correct format
             }
 
-        }
-        catch (NullPointerException e) {
-            System.out.println("Oops, couldn't connect to server.");
-//            System.err.println("failed to connect to server, error information: " + e);
-        }
-        catch (JSONException e){
+        } catch (NullPointerException e) {
+            System.out.println("Null pointer");
+        } catch (JSONException e) {
             System.out.println("JSON exception");
         }
     }
 
-    private JSONArray jsonSortedDescending(JSONArray unsorted){
+    /**
+     * returns the get request for all taxis in the right format
+     */
+    private void generateConsole() {
+        System.out.println("Input your pick up location");
+        System.out.println("Input a latitude");
+        String latitudePick = inputLatitude();
+        System.out.println("Input a longitude");
+        String longitudePick = inputLongitude();
+        System.out.println("Input your drop off location");
+        System.out.println("Input a latitude");
+        String latitudeDrop = inputLatitude();
+        System.out.println("Input a longitude");
+        String longitudeDrop = inputLongitude();
+
+        int numOfPass = inputPassengers(); // the number of passengers for car ride
+
+
+        try {
+            JSONObject dave = new JSONObject();
+            JSONObject eric = new JSONObject();
+            JSONObject jeff = new JSONObject();
+            try {
+                 dave = new JSONObject(HttpsRequest.sendGET("https://techtest.rideways.com/dave?pickup=" + latitudePick + "," + longitudePick + "&dropoff=" + latitudeDrop + "," + longitudeDrop).toString());
+            }
+            catch (NullPointerException e){ // so that the program continues even if one request fails
+                System.out.println("while retrieving from Dave's taxis");
+                    dave.put("supplier_id", "DAVE"); // fill the null object with template values
+                    JSONArray empty = new JSONArray();
+                    dave.put("options", empty);
+            }
+
+            try {
+                eric = new JSONObject(HttpsRequest.sendGET("https://techtest.rideways.com/dave?pickup=" + latitudePick + "," + longitudePick + "&dropoff=" + latitudeDrop + "," + longitudeDrop).toString());
+            }
+            catch (NullPointerException e){
+                System.out.println("while retrieving from Eric's taxis");
+                eric.put("supplier_id", "ERIC");
+                JSONArray empty = new JSONArray();
+                eric.put("options", empty);
+            }
+
+            try {
+                jeff = new JSONObject(HttpsRequest.sendGET("https://techtest.rideways.com/dave?pickup=" + latitudePick + "," + longitudePick + "&dropoff=" + latitudeDrop + "," + longitudeDrop).toString());
+            }
+            catch (NullPointerException e){
+                System.out.println("while retrieving from Jeff's taxis");
+                jeff.put("supplier_id", "JEFF");
+                JSONArray empty = new JSONArray();
+                jeff.put("options", empty);
+            }
+
+            JSONArray daveArr = dave.getJSONArray("options"); // gets the array of cars available
+            JSONArray ericArr = eric.getJSONArray("options");
+            JSONArray jeffArr = jeff.getJSONArray("options");
+
+            fillMap(daveMap, daveArr);
+            fillMap(ericMap, ericArr);
+            fillMap(jeffMap, jeffArr);
+
+            JSONArray arr = new JSONArray(); // the final array which will have the cheapest car from each
+
+            checkMap(daveMap);
+            checkMap(ericMap);
+            checkMap(jeffMap);
+
+            addCheapest(arr, "STANDARD");
+            addCheapest(arr, "EXECUTIVE");
+            addCheapest(arr, "LUXURY");
+            addCheapest(arr, "PEOPLE_CARRIER");
+            addCheapest(arr, "LUXURY_PEOPLE_CARRIER");
+            addCheapest(arr, "MINIBUS");
+
+            JSONArray sortedArr = jsonSortedDescending(arr);
+            boolean carFound = false; // checks whether there is something to return
+            for (int i = 0; i < sortedArr.length(); i++) {
+                if (numOfPass > 16) {
+                    System.out.println("we do not have any cars that fit more than 16 people");
+                    carFound = true;
+                    break;
+                }
+                String carType = sortedArr.getJSONObject(i).getString("car_type");
+                if (numOfPass > 6 && numOfPass < 17 && carType.equals("MINIBUS")) {
+                    System.out.println(carType + " - " + sortedArr.getJSONObject(i).getString("supplier") + " - " + sortedArr.getJSONObject(i).getString("price"));
+                    carFound = true;
+                } else if (numOfPass > 4 && numOfPass < 7 && (carType.equals("MINIBUS") || carType.equals("LUXURY_PEOPLE_CARRIER") || carType.equals("PEOPLE_CARRIER"))) {
+                    System.out.println(carType + " - " + sortedArr.getJSONObject(i).getString("supplier") + " - " + sortedArr.getJSONObject(i).getString("price"));
+                    carFound = true;
+                } else if (numOfPass < 5) {
+                    System.out.println(carType + " - " + sortedArr.getJSONObject(i).getString("supplier") + " - " + sortedArr.getJSONObject(i).getString("price"));
+                    carFound = true;
+                }
+
+            }
+            if (!carFound) {
+                System.out.println("Sorry no cars available at the moment");
+            }
+
+
+        } catch (JSONException e) {
+            System.out.println("JSON exception");
+        }
+    }
+
+    /**
+     * sorts the array according to price
+     * @param unsorted unsorted array to be sorted
+     * @return array sorted descending
+     */
+    private JSONArray jsonSortedDescending(JSONArray unsorted) {
         JSONArray sortedJsonArray = new JSONArray();
 
         List<JSONObject> jsonValues = new ArrayList<JSONObject>();
         for (int i = 0; i < unsorted.length(); i++) {
             try {
                 jsonValues.add(unsorted.getJSONObject(i));
-            }
-            catch (JSONException e){
+            } catch (JSONException e) {
                 System.out.println("JSON exception");
             }
         }
-        Collections.sort( jsonValues, new Comparator<JSONObject>() {
-            //You can change "Name" with "ID" if you want to sort by ID
+        Collections.sort(jsonValues, new Comparator<JSONObject>() {
             private static final String KEY_NAME = "price";
 
             @Override
@@ -126,55 +215,189 @@ public class BookingConsole {
                 try {
                     valA = (Integer) a.get(KEY_NAME);
                     valB = (Integer) b.get(KEY_NAME);
-                }
-                catch (JSONException e) {
+                } catch (JSONException e) {
                     System.out.println("JSON exception");
                 }
 
-                // return valA.compareTo(valB);
-                //if you want to change the sort order, simply use the following:
-                return -valA.compareTo(valB);
+                return -valA.compareTo(valB); // descending
             }
         });
 
         for (int i = 0; i < unsorted.length(); i++) {
-            //System.out.println(jsonValues.get(i));
             sortedJsonArray.put(jsonValues.get(i));
         }
 
         return sortedJsonArray;
     }
 
-
-    public boolean checkIfDouble(String input){
-        try{
+    /**
+     * checks if an input is a double
+     * @param input input from the console
+     * @return whether the input is a double
+     */
+    public boolean checkIfDouble(String input, int maxDouble) {
+        try {
             Double.parseDouble(input);
-        }catch (NumberFormatException ex) {
+        } catch (NumberFormatException ex) {
+            System.out.println("invalid input, please input a number.");
+            return false;
+        }
+        if (Double.parseDouble(input) > maxDouble || Double.parseDouble(input) < -maxDouble){
+            System.out.println("your input should be a double between -" + maxDouble + " and " + maxDouble + " please try again");
             return false;
         }
         return true;
 
     }
 
-    public boolean checkIfInt(String input){
-        try{
+    /**
+     * checks if an input is an int
+     * @param input input from the console
+     * @return whether the input is an int
+     */
+    public boolean checkIfInt(String input) {
+        try {
             Integer.parseInt(input);
-        }catch (NumberFormatException ex) {
+        } catch (NumberFormatException ex) {
             return false;
         }
         return true;
 
     }
 
-    private int inputPassengers(){
+    /**
+     * allows the user to input the number of passengers
+     * @return the number of passengers inputed
+     */
+    private int inputPassengers() {
         Scanner scan = new Scanner(System.in);
         System.out.println("Input number of passengers");
         String passNum = scan.nextLine();
-        while(!checkIfInt(passNum) || Integer.parseInt(passNum) <= 0){
+        while (!checkIfInt(passNum) || Integer.parseInt(passNum) <= 0) {
             System.out.println("invalid input, please input a number.");
-            passNum= scan.nextLine();
+            passNum = scan.nextLine();
         }
         return Integer.parseInt(passNum);
     }
 
+    /**
+     * allows the user to input a latitude
+     * @return the location
+     */
+    public String inputLatitude() {
+        Scanner scan = new Scanner(System.in);
+
+        String location = scan.nextLine();
+        while (!checkIfDouble(location, 90)) {
+            location = scan.nextLine();
+        }
+        return location;
+    }
+
+    /**
+     * allows the user to input a location
+     * @return the location
+     */
+    public String inputLongitude() {
+        Scanner scan = new Scanner(System.in);
+
+        String location = scan.nextLine();
+        while (!checkIfDouble(location, 180)) {
+            location = scan.nextLine();
+        }
+        return location;
+    }
+
+    /**
+     * fills the map with whatever is in the JSONArray
+     * @param map map to be filled in
+     * @param arr array with all cars and prices
+     */
+    public void fillMap(HashMap<String, Integer> map, JSONArray arr){
+        try {
+            for (int i = 0 ; i < arr.length(); i++){
+                String carType = arr.getJSONObject(i).getString("car_type");
+                Integer price = Integer.parseInt(arr.getJSONObject(i).getString("price"));
+                map.put(carType, price);
+            }
+        }
+        catch (JSONException e){
+            System.out.println("JSON exception");
+        }
+
+    }
+
+    /**
+     * pads the maps with car types that are not already there with prices of max int
+     * @param map the map to fill
+     */
+    public void checkMap(HashMap<String, Integer> map){
+        if(map.get("STANDARD") == null){
+            map.put("STANDARD", Integer.MAX_VALUE);
+        }
+        if(map.get("EXECUTIVE") == null){
+            map.put("EXECUTIVE", Integer.MAX_VALUE);
+        }
+        if(map.get("LUXURY") == null){
+            map.put("LUXURY", Integer.MAX_VALUE);
+        }
+        if(map.get("PEOPLE_CARRIER") == null){
+            map.put("PEOPLE_CARRIER", Integer.MAX_VALUE);
+        }
+        if(map.get("LUXURY_PEOPLE_CARRIER") == null){
+            map.put("LUXURY_PEOPLE_CARRIER", Integer.MAX_VALUE);
+        }
+        if(map.get("MINIBUS") == null){
+            map.put("MINIBUS", Integer.MAX_VALUE);
+        }
+    }
+
+    /**
+     * adds the cheapest car from each supplier to the final array
+     * @param arr array to add cars to
+     * @param car the car type to add
+     */
+    public void addCheapest(JSONArray arr ,String car){
+        try {
+            if(daveMap.get(car) < ericMap.get(car)){
+                if (daveMap.get(car) < jeffMap.get(car)){
+                    JSONObject list1 = new JSONObject();
+                    list1.put("car_type", car);
+                    list1.put("supplier", "dave");
+                    list1.put("price", daveMap.get(car));
+                    arr.put(list1);
+                }
+                else{
+                    if (jeffMap.get(car) != Integer.MAX_VALUE) {
+                        JSONObject list1 = new JSONObject();
+                        list1.put("car_type", car);
+                        list1.put("supplier", "jeff");
+                        list1.put("price", jeffMap.get(car));
+                        arr.put(list1);
+                    }
+                }
+            }
+            else{
+                if (ericMap.get(car) < jeffMap.get(car)){
+                    JSONObject list1 = new JSONObject();
+                    list1.put("car_type", car);
+                    list1.put("supplier", "eric");
+                    list1.put("price", ericMap.get(car));
+                    arr.put(list1);
+                }
+                else{
+                    if (jeffMap.get(car) != Integer.MAX_VALUE) {
+                        JSONObject list1 = new JSONObject();
+                        list1.put("car_type", car);
+                        list1.put("supplier", "jeff");
+                        list1.put("price", jeffMap.get(car));
+                        arr.put(list1);
+                    }
+                }
+            }
+
+        } catch (JSONException e1) {
+            System.out.println("Json exception");
+        }
+    }
 }

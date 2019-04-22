@@ -2,7 +2,13 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
+
+/**
+ * This class is responsible for making the get request
+ * @author Mufid Alkhaddour
+ */
 
 public class HttpsRequest {
 
@@ -10,6 +16,12 @@ public class HttpsRequest {
 
     private static final String DEFAULT_AGENT = "Mozilla/5.0";
 
+    /**
+     * calls the sendGET_method
+     * @param url the api url
+     * @param agent the agent to be used
+     * @return the JSON
+     */
     public static StringBuffer sendGET(String url, String agent) {
         try {
             return sendGET_(url, agent);
@@ -19,6 +31,11 @@ public class HttpsRequest {
         }
     }
 
+    /**
+     * calls the sendGET_method
+     * @param url the api url
+     * @return the JSON
+     */
     public static StringBuffer sendGET(String url) {
         try {
             return sendGET_(url, "");
@@ -28,6 +45,13 @@ public class HttpsRequest {
         }
     }
 
+    /**
+     * makes the get request
+     * @param url the api url
+     * @param agent_ the agent to be used
+     * @return
+     * @throws IOException
+     */
     private static StringBuffer sendGET_(String url, String agent_) throws IOException {
         String fullurl = "";
         if (url.substring(0, 7).equals("http://") || url.substring(0, 8).equals("https://") || url.substring(0, 7).equals("file://")) {
@@ -38,7 +62,9 @@ public class HttpsRequest {
             fullurl = "http://" + url;
         }
         URL obj = new URL(fullurl);
+
         HttpURLConnection con = (HttpURLConnection) obj.openConnection();
+        con.setConnectTimeout(2000); // timeout after 2 seconds
         con.setRequestMethod("GET");
         String agent = DEFAULT_AGENT;
         if (agent_ != "") {
@@ -62,7 +88,12 @@ public class HttpsRequest {
             // print result
             return response;
         } else {
-            System.out.println("GET request not worked");
+            if (responseCode == 400){
+                System.out.println("Bad Request");
+            }
+            else if(responseCode == 500){
+                System.out.println("Internal Server Error");
+            }
             return null;
         }
     }
