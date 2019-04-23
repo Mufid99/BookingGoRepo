@@ -107,8 +107,19 @@ public class BookingConsole {
 
     }
 
+
+    /**
+     * Either returns prints to the console or a string to be displayed on the api.
+     * @param latitudePick pick up latitude
+     * @param longitudePick pick up longitude
+     * @param latitudeDrop drop off latitude
+     * @param longitudeDrop drop off longitude
+     * @param numOfPassStr the number of passengers
+     * @param shouldPrint whether the method would be used for the console or the api
+     * @return
+     */
     public String generateAnswer(String latitudePick, String longitudePick, String latitudeDrop, String longitudeDrop, String numOfPassStr, boolean shouldPrint) {
-        String answer = "";
+        String answer = ""; // the string to be returned for the api
         int numOfPass;
         try {
             numOfPass = Integer.parseInt(numOfPassStr);
